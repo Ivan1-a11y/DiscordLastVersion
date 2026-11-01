@@ -1,0 +1,9 @@
+{
+  "name": "Accord - Real-Time Discord Clone",
+  "description": "A full-featured Discord web clone with real-time text chat, voice channels, WebRTC signaling, servers, roles, direct messages, and user presence.",
+  "requestFramePermissions": [
+    "microphone",
+    "camera"
+  ],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

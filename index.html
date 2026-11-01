@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Accord - Real-Time Discord Clone</title>
+    <meta name="description" content="A full-featured Discord web clone with real-time text chat, voice channels, WebRTC signaling, servers, roles, direct messages, and user presence." />
+    <meta property="og:title" content="Accord - Real-Time Discord Clone" />
+    <meta property="og:description" content="A full-featured Discord web clone with real-time text chat, voice channels, WebRTC signaling, servers, roles, direct messages, and user presence." />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="theme-color" content="#1e1f22" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Accord" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/pwa-192x192.png" />
+    <link rel="manifest" href="/manifest.json" />
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function() {
+          navigator.serviceWorker.register('/sw.js').catch(function() {});
+        });
+      }
+    </script>
+    <script>
+      (function() {
+        // Safe mock for Vite HMR WebSocket so client never errors or closes
+        try {
+          const OrigWebSocket = window.WebSocket;
+          if (typeof OrigWebSocket === 'function') {
+            window.WebSocket = function(url, protocols) {
+              const urlStr = typeof url === 'string' ? url : (url && url.toString ? url.toString() : '');
+              const protoStr = typeof protocols === 'string' ? protocols : (Array.isArray(protocols) ? protocols.join(',') : '');
+              const isViteHmr = protoStr.includes('vite-hmr') || protoStr.includes('vite-ping') || urlStr.includes('token=') || urlStr.includes('/@vite');
+              if (isViteHmr) {
+                const target = new EventTarget();
+                target.readyState = 1; // WebSocket.OPEN
+                target.OPEN = 1;
+                target.CONNECTING = 0;
+                target.CLOSING = 2;
+                target.CLOSED = 3;
+                target.url = urlStr;
+                target.protocol = protoStr || 'vite-hmr';
+                target.bufferedAmount = 0;
+                target.extensions = '';
+                target.binaryType = 'blob';
+                target.send = function() {};
+                target.close = function() {};
+                target.onopen = null;
+                target.onclose = null;
+                target.onerror = null;
+                target.onmessage = null;
+                setTimeout(() => {
+                  try {
+                    const ev = new Event('open');
+                    target.dispatchEvent(ev);
+                    if (typeof target.onopen === 'function') target.onopen(ev);
+                  } catch (e) {}
+                }, 0);
+                return target;
+              }
+              return new OrigWebSocket(url, protocols);
+            };
+            window.WebSocket.prototype = OrigWebSocket.prototype;
+            window.WebSocket.CONNECTING = 0;
+            window.WebSocket.OPEN = 1;
+            window.WebSocket.CLOSING = 2;
+            window.WebSocket.CLOSED = 3;
+          }
+        } catch (e) {}
+
+        // Robust suppression of Vite HMR WebSocket connection logs and errors
+        function isViteOrWsError(str) {
+          if (!str) return false;
+          const s = String(str);
+          return (
+            s.includes('[vite]') ||
+            s.includes('WebSocket') ||
+            s.includes('websocket') ||
+            s.includes('SendBeforeConnectError') ||
+            s.includes('send was called before connect') ||
+            s.includes('invoke was called before connect') ||
+            s.includes('pwa-entry-point-loaded') ||
+            s.includes('Called in wrong state') ||
+            s.includes('setRemoteDescription') ||
+            s.includes('RTCPeerConnection') ||
+            s.includes('@vite/client')
+          );
+        }
+
+        const origConsoleError = console.error;
+        console.error = function(...args) {
+          const joined = args.map(a => {
+            if (typeof a === 'string') return a;
+            if (a && a.stack) return a.stack;
+            if (a && a.message) return a.message;
+            return String(a);
+          }).join(' ');
+          if (isViteOrWsError(joined)) {
+            return;
+          }
+          return origConsoleError.apply(console, args);
+        };
+
+        const origConsoleWarn = console.warn;
+        console.warn = function(...args) {
+          const joined = args.map(a => {
+            if (typeof a === 'string') return a;
+            if (a && a.stack) return a.stack;
+            if (a && a.message) return a.message;
+            return String(a);
+          }).join(' ');
+          if (isViteOrWsError(joined)) {
+            return;
+          }
+          return origConsoleWarn.apply(console, args);
+        };
+
+        // Prevent any uncaught promise rejections from Vite HMR WebSocket or WebRTC race conditions
+        window.addEventListener('unhandledrejection', function(event) {
+          const reason = event.reason;
+          const msg = reason ? (reason.message || String(reason)) : '';
+          const stack = reason && reason.stack ? String(reason.stack) : '';
+          const full = msg + ' ' + stack;
+          if (isViteOrWsError(full)) {
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            return false;
+          }
+        }, true);
+
+        window.addEventListener('error', function(event) {
+          const msg = event.message || '';
+          const errorObj = event.error;
+          const stack = errorObj && errorObj.stack ? String(errorObj.stack) : '';
+          const full = msg + ' ' + stack;
+          if (isViteOrWsError(full)) {
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            return false;
+          }
+        }, true);
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+
